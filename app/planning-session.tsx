@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, FlatList, SafeAreaView, Alert, TouchableOpacity, Share } from 'react-native';
+import { StyleSheet, View, FlatList, SafeAreaView, Alert, TouchableOpacity, Share, Image, ImageURISource } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, router } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
@@ -7,11 +7,29 @@ import { ThemedView } from '@/components/ThemedView';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { Button } from '@/components/Button';
 import { PlanningCard } from '@/components/PlanningCard';
+import { AnimatedPlanningCard } from '@/components/AnimatedPlanningCard';
+import { AnimatedParticipant } from '@/components/AnimatedParticipant';
+import { AnimatedResults } from '@/components/AnimatedResults';
 import useSessionStore, { Participant } from '@/stores/sessionStore';
 import * as Clipboard from 'expo-clipboard';
 
 // Standard Fibonacci sequence used in Planning Poker
 const CARD_VALUES = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '∞'];
+
+// Generic avatar for users without images
+const DEFAULT_AVATAR = require('@/assets/images/icon.png');
+
+// Define routes for type checking in the namespace
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList {
+      home: undefined;
+      'planning-session': { id: string };
+      'planning-poker': { sessionId?: string };
+      login: undefined;
+    }
+  }
+}
 
 export default function PlanningSessionScreen() {
   const { t } = useTranslation();
@@ -82,7 +100,7 @@ export default function PlanningSessionScreen() {
   
   const handleLeaveSession = () => {
     useSessionStore.getState().leaveSession();
-    router.replace('home' as any);
+    router.replace('/home');
   };
   
   const handleReveal = async () => {
@@ -100,7 +118,7 @@ export default function PlanningSessionScreen() {
     
     try {
       await Share.share({
-        message: `Join my Planning Poker session with ID: ${id}`,
+        message: t('session.joinMessage', { id }),
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -144,27 +162,97 @@ export default function PlanningSessionScreen() {
       }
     });
     
+    // Format data for the AnimatedResults component
+    const results = Object.entries(voteCount).map(([value, count]) => ({
+      value,
+      count,
+      percentage: Math.round((count / votes.length) * 100)
+    })).sort((a, b) => {
+      // Sort numeric values numerically, non-numeric at the end
+      const aNum = parseFloat(a.value);
+      const bNum = parseFloat(b.value);
+      
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      }
+      
+      if (isNaN(aNum)) return 1;
+      if (isNaN(bNum)) return -1;
+      
+      return 0;
+    });
+    
     return {
       average: average.toFixed(1),
       mostFrequent,
+      totalVotes: votes.length,
+      voteResults: results
     };
   };
   
+  // Group participants by their vote choice
+  const getParticipantsByVote = () => {
+    if (!currentSession || !currentSession.isRevealed) return null;
+    
+    const groupedParticipants: Record<string, Participant[]> = {};
+    
+    // Group participants by their vote
+    Object.values(currentSession.participants).forEach(participant => {
+      if (participant.vote) {
+        if (!groupedParticipants[participant.vote]) {
+          groupedParticipants[participant.vote] = [];
+        }
+        groupedParticipants[participant.vote].push(participant);
+      }
+    });
+    
+    // Sort groups by vote value (numeric if possible)
+    const sortedGroups = Object.entries(groupedParticipants).sort((a, b) => {
+      // Special handling for non-numeric votes
+      if (a[0] === '?' || a[0] === '∞') return 1;
+      if (b[0] === '?' || b[0] === '∞') return -1;
+      return Number(a[0]) - Number(b[0]);
+    });
+    
+    return sortedGroups;
+  };
+  
+  // Get participants who have voted but not revealed
+  const getVotedParticipants = () => {
+    if (!currentSession || currentSession.isRevealed) return [];
+    
+    return Object.values(currentSession.participants)
+      .filter(p => p.vote !== null && p.vote !== undefined);
+  };
+  
   const results = calculateResults();
+  const votedParticipants = getVotedParticipants();
+  const participantsByVote = getParticipantsByVote();
   
   const renderParticipant = ({ item }: { item: Participant }) => {
     const hasVoted = !!item.vote;
     const isCurrentUser = item.id === currentParticipant?.id;
+    const imageSource = getParticipantImage(item.image);
     
     return (
       <View style={[
         styles.participantItem, 
-        isCurrentUser && styles.currentUserItem
+        isCurrentUser && styles.currentUserItem,
+        !hasVoted && styles.notVotedItem
       ]}>
-        <ThemedText style={styles.participantName}>
-          {item.name} {isCurrentUser && '(You)'}
-          {item.id === currentSession?.creator && ' 👑'}
-        </ThemedText>
+        <View style={styles.participantInfo}>
+          <Image 
+            source={imageSource} 
+            style={styles.participantListImage}
+          />
+          <ThemedText style={[
+            styles.participantName,
+            !hasVoted && styles.notVotedText
+          ]}>
+            {item.name} {isCurrentUser && t('session.youIndicator')}
+            {item.id === currentSession?.creator && ' 👑'}
+          </ThemedText>
+        </View>
         
         <View style={styles.voteContainer}>
           {currentSession?.isRevealed ? (
@@ -172,10 +260,102 @@ export default function PlanningSessionScreen() {
               {item.vote || '?'}
             </ThemedText>
           ) : (
-            <ThemedText style={styles.votePlaceholder}>
+            <ThemedText style={[styles.votePlaceholder, hasVoted ? styles.hasVotedText : styles.notVotedText]}>
               {hasVoted ? '✓' : '...'}
             </ThemedText>
           )}
+        </View>
+      </View>
+    );
+  };
+  
+  // Handle dynamic image imports
+  const getParticipantImage = (imagePath: string | null) => {
+    if (!imagePath) return DEFAULT_AVATAR;
+    
+    // Since imagePath is now just the initials, use it directly to look up the image
+    const initials = imagePath;
+    
+    // Map of available images
+    const images: Record<string, any> = {
+      'AR': require('@/assets/images/people/AR.png'),
+      'AP': require('@/assets/images/people/AP.png'),
+      'BA': require('@/assets/images/people/BA.png'),
+      'CV': require('@/assets/images/people/CV.png'),
+      'DG': require('@/assets/images/people/DG.png'),
+      'DP': require('@/assets/images/people/DP.png'),
+      'IE': require('@/assets/images/people/IE.png'),
+      'JD': require('@/assets/images/people/JD.png'),
+      'LB': require('@/assets/images/people/LB.png'),
+      'RG': require('@/assets/images/people/RG.png'),
+      'RGA': require('@/assets/images/people/RGA.png'),
+      'RV': require('@/assets/images/people/RV.png'),
+      'SC': require('@/assets/images/people/SC.png'),
+      'SG': require('@/assets/images/people/SG.png'),
+      'VP': require('@/assets/images/people/VP.png'),
+      'VQ': require('@/assets/images/people/VQ.png'),
+    };
+    
+    return images[initials] || DEFAULT_AVATAR;
+  };
+  
+  const renderDynamicParticipantImage = ({ item }: { item: Participant }) => {
+    const imageSource = getParticipantImage(item.image);
+    const isCurrentUser = item.id === currentParticipant?.id;
+    const isCreator = item.id === currentSession?.creator;
+    const hasVoted = !!item.vote;
+    
+    return (
+      <AnimatedParticipant
+        participant={item}
+        isCurrentUser={isCurrentUser}
+        isCreator={isCreator}
+        hasVoted={hasVoted}
+        imageSource={imageSource}
+        showName={true}
+        style={styles.votedParticipantContainer}
+      />
+    );
+  };
+  
+  // Render a single participant image, used in both voting and results view
+  const renderParticipantImage = (participant: Participant, showName: boolean = true) => {
+    const imageSource = getParticipantImage(participant.image);
+    
+    return (
+      <View key={participant.id} style={styles.votedParticipantContainer}>
+        <Image 
+          source={imageSource} 
+          style={styles.participantImage}
+        />
+        {showName && (
+          <ThemedText style={styles.votedParticipantName}>
+            {participant.name}
+          </ThemedText>
+        )}
+      </View>
+    );
+  };
+  
+  // Render a group of participants who selected the same card
+  const renderVoteGroup = ([voteValue, participants]: [string, Participant[]]) => {
+    return (
+      <View key={voteValue} style={styles.voteGroupContainer}>
+        <View style={styles.voteGroupHeader}>
+          <View style={styles.voteCardContainer}>
+            <PlanningCard
+              value={voteValue}
+              selected={true}
+              onSelect={() => {}}
+            />
+          </View>
+          <ThemedText style={styles.voteGroupCount}>
+            {participants.length} {participants.length === 1 ? t('session.vote') : t('session.votes')}
+          </ThemedText>
+        </View>
+        
+        <View style={styles.voteGroupParticipants}>
+          {participants.map(participant => renderParticipantImage(participant))}
         </View>
       </View>
     );
@@ -189,13 +369,13 @@ export default function PlanningSessionScreen() {
       <ThemedView style={styles.container}>
         <ThemedText style={styles.loadingText}>{t('common.loading')}</ThemedText>
         <ThemedText style={styles.errorText}>
-          {sessionState.error ? `Error: ${sessionState.error}` : 'Attempting to connect to session...'}
+          {sessionState.error ? `Error: ${sessionState.error}` : t('session.connectingAttempt')}
         </ThemedText>
         
         <View style={styles.buttonContainer}>
           <Button
-            title="Go Back"
-            onPress={() => router.replace('home' as any)}
+            title={t('common.goBack')}
+            onPress={() => router.replace('/home')}
             variant="outline"
             style={styles.actionButton}
           />
@@ -222,16 +402,32 @@ export default function PlanningSessionScreen() {
           </View>
         </View>
         
+        {/* Voted participants gallery - only show when not revealed */}
+        {!currentSession.isRevealed && votedParticipants.length > 0 && (
+          <View style={styles.votedParticipantsSection}>
+            <ThemedText type="subtitle">{t('session.whoHasVoted')}</ThemedText>
+            <FlatList
+              data={votedParticipants}
+              renderItem={renderDynamicParticipantImage}
+              keyExtractor={(item) => item.id}
+              horizontal
+              style={styles.votedParticipantsList}
+              contentContainerStyle={styles.votedParticipantsContent}
+            />
+          </View>
+        )}
+        
         <View style={styles.cardsSection}>
           <ThemedText type="subtitle">{t('planningPoker.yourEstimation')}</ThemedText>
           
           <View style={styles.cardGrid}>
             {CARD_VALUES.map((value) => (
-              <PlanningCard
+              <AnimatedPlanningCard
                 key={value}
                 value={value}
                 selected={value === selectedCard}
                 onSelect={handleCardSelect}
+                revealed={currentSession.isRevealed}
               />
             ))}
           </View>
@@ -249,9 +445,24 @@ export default function PlanningSessionScreen() {
           
           {currentSession.isRevealed && results && (
             <View style={styles.resultsContainer}>
-              <ThemedText style={styles.resultsTitle}>Results:</ThemedText>
-              <ThemedText>Average: {results.average}</ThemedText>
-              <ThemedText>Most common: {results.mostFrequent}</ThemedText>
+              <ThemedText style={styles.resultsTitle}>{t('session.results')}</ThemedText>
+              
+              <AnimatedResults
+                results={results.voteResults}
+                average={results.average}
+                mostFrequent={results.mostFrequent}
+                totalVotes={results.totalVotes}
+              />
+              
+              {/* Vote Groups */}
+              {participantsByVote && (
+                <View style={styles.voteGroupsContainer}>
+                  <ThemedText style={styles.voteGroupsTitle}>
+                    {t('session.groupedVotes')}
+                  </ThemedText>
+                  {participantsByVote.map(renderVoteGroup)}
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -310,6 +521,32 @@ const styles = StyleSheet.create({
   sessionIdValue: {
     fontWeight: 'bold',
   },
+  votedParticipantsSection: {
+    marginBottom: 15,
+  },
+  votedParticipantsList: {
+    marginTop: 10,
+  },
+  votedParticipantsContent: {
+    paddingHorizontal: 5,
+  },
+  votedParticipantContainer: {
+    alignItems: 'center',
+    marginHorizontal: 8,
+    width: 80,
+  },
+  participantImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: 5,
+    borderWidth: 2,
+    borderColor: '#3498db',
+  },
+  votedParticipantName: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
   cardsSection: {
     marginBottom: 20,
   },
@@ -337,6 +574,16 @@ const styles = StyleSheet.create({
   },
   currentUserItem: {
     backgroundColor: 'rgba(52, 152, 219, 0.1)',
+  },
+  participantInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  participantListImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
   },
   participantName: {
     fontSize: 16,
@@ -368,6 +615,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
   },
+  resultsSummary: {
+    marginBottom: 10,
+  },
+  voteGroupsContainer: {
+    marginTop: 10,
+  },
+  voteGroupsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
   actionsContainer: {
     marginTop: 10,
   },
@@ -395,5 +653,36 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 30,
     width: '100%',
+  },
+  voteGroupContainer: {
+    marginBottom: 10,
+  },
+  voteGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  voteCardContainer: {
+    marginRight: 10,
+  },
+  voteGroupCount: {
+    fontSize: 12,
+  },
+  voteGroupParticipants: {
+    flexDirection: 'row',
+  },
+  voteGroupImages: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  notVotedItem: {
+    backgroundColor: 'rgba(240, 240, 240, 0.5)',
+  },
+  notVotedText: {
+    color: '#BBBBBB',
+  },
+  hasVotedText: {
+    color: '#2ecc71',
+    fontWeight: 'bold',
   },
 }); 

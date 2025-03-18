@@ -15,7 +15,7 @@ export default function LoginScreen() {
   const handleContinue = () => {
     if (name.trim() !== '') {
       useUserStore.getState().setName(name);
-      router.push('home' as any);
+      router.push('/home');
     } else {
       // ... existing code ...
     }

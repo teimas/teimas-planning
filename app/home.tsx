@@ -27,7 +27,7 @@ export default function HomeScreen() {
       // Short timeout to simulate network delay
       setTimeout(() => {
         router.push({
-          pathname: 'planning-session' as any,
+          pathname: '/planning-session',
           params: { id: sessionId },
         });
       }, 300);
@@ -56,7 +56,7 @@ export default function HomeScreen() {
       // Short timeout to simulate network delay
       setTimeout(() => {
         router.push({
-          pathname: 'planning-session' as any,
+          pathname: '/planning-session',
           params: { id: formattedSessionId },
         });
       }, 300);

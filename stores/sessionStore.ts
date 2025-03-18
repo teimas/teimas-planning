@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import 'react-native-get-random-values';
-import { ref, set as firebaseSet, onValue, off, update } from 'firebase/database';
-import { database } from '@/firebase/config';
+
+// Mock implementation for sessions - no Firebase dependencies
+const mockSessions: Record<string, Session> = {};
 
 export type Participant = {
   id: string;
@@ -67,17 +68,8 @@ const useSessionStore = create<SessionState>((set, get) => ({
         createdAt: Date.now(),
       };
       
-      // Save to Firebase
-      await firebaseSet(ref(database, `sessions/${sessionId}`), session);
-      
-      // Listen for changes
-      const sessionRef = ref(database, `sessions/${sessionId}`);
-      onValue(sessionRef, (snapshot) => {
-        const updatedSession = snapshot.val();
-        if (updatedSession) {
-          set({ currentSession: updatedSession });
-        }
-      });
+      // Save to mock storage
+      mockSessions[sessionId] = session;
       
       set({ 
         currentSession: session, 
@@ -101,59 +93,37 @@ const useSessionStore = create<SessionState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       console.log('Joining session:', sessionId, 'as', participantName);
-      // Check if session exists
-      const sessionRef = ref(database, `sessions/${sessionId}`);
       
-      return new Promise<void>((resolve, reject) => {
-        onValue(sessionRef, async (snapshot) => {
-          const session = snapshot.val() as Session | null;
-          
-          if (!session) {
-            set({ 
-              error: 'Session not found', 
-              loading: false 
-            });
-            off(sessionRef);
-            reject(new Error('Session not found'));
-            return;
-          }
-          
-          // Create participant
-          const participantId = uuidv4();
-          const participant: Participant = {
-            id: participantId,
-            name: participantName,
-            vote: null,
-            isRevealed: false,
-          };
-          
-          // Add participant to session
-          const updatedParticipants = {
-            ...session.participants,
-            [participantId]: participant
-          };
-          
-          await update(ref(database, `sessions/${sessionId}`), {
-            participants: updatedParticipants
-          });
-          
-          set({ 
-            currentSession: { ...session, participants: updatedParticipants },
-            currentParticipant: participant,
-            loading: false 
-          });
-          
-          // Keep listening for changes
-          onValue(sessionRef, (snapshot) => {
-            const updatedSession = snapshot.val();
-            if (updatedSession) {
-              set({ currentSession: updatedSession });
-            }
-          });
-          
-          resolve();
-        }, { onlyOnce: true });
+      // Check if session exists in mock storage
+      const session = mockSessions[sessionId];
+      if (!session) {
+        const error = new Error('Session not found');
+        set({ 
+          error: 'Session not found', 
+          loading: false 
+        });
+        throw error;
+      }
+      
+      // Create participant
+      const participantId = uuidv4();
+      const participant: Participant = {
+        id: participantId,
+        name: participantName,
+        vote: null,
+        isRevealed: false,
+      };
+      
+      // Add participant to session
+      session.participants[participantId] = participant;
+      
+      set({ 
+        currentSession: session,
+        currentParticipant: participant,
+        loading: false 
       });
+      
+      return Promise.resolve();
     } catch (error) {
       console.error('Error joining session:', error);
       set({ 
@@ -166,26 +136,19 @@ const useSessionStore = create<SessionState>((set, get) => ({
   
   leaveSession: async () => {
     const { currentSession, currentParticipant } = get();
-    if (!currentSession || !currentParticipant) return;
+    if (!currentSession || !currentParticipant) return Promise.resolve();
     
     set({ loading: true, error: null });
     try {
-      const sessionRef = ref(database, `sessions/${currentSession.id}`);
-      
-      // Remove listener
-      off(sessionRef);
-      
-      const updatedParticipants = { ...currentSession.participants };
-      delete updatedParticipants[currentParticipant.id];
-      
-      // If no participants left, delete the session
-      if (Object.keys(updatedParticipants).length === 0) {
-        await firebaseSet(ref(database, `sessions/${currentSession.id}`), null);
-      } else {
-        // Otherwise update participants
-        await update(ref(database, `sessions/${currentSession.id}`), {
-          participants: updatedParticipants
-        });
+      // Remove participant from session
+      const session = mockSessions[currentSession.id];
+      if (session) {
+        delete session.participants[currentParticipant.id];
+        
+        // If no participants left, delete the session
+        if (Object.keys(session.participants).length === 0) {
+          delete mockSessions[currentSession.id];
+        }
       }
       
       set({ 
@@ -193,88 +156,105 @@ const useSessionStore = create<SessionState>((set, get) => ({
         currentParticipant: null,
         loading: false 
       });
+      
+      return Promise.resolve();
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to leave session', 
         loading: false 
       });
+      return Promise.resolve();
     }
   },
   
   castVote: async (vote: string) => {
     const { currentSession, currentParticipant } = get();
-    if (!currentSession || !currentParticipant) return;
+    if (!currentSession || !currentParticipant) return Promise.resolve();
     
     set({ loading: true, error: null });
     try {
-      const updatedParticipant = {
-        ...currentParticipant,
-        vote,
-      };
+      // Update participant vote
+      const session = mockSessions[currentSession.id];
+      if (session && session.participants[currentParticipant.id]) {
+        session.participants[currentParticipant.id].vote = vote;
+        
+        const updatedParticipant = {
+          ...currentParticipant,
+          vote,
+        };
+        
+        set({ 
+          currentParticipant: updatedParticipant,
+          currentSession: session,
+          loading: false 
+        });
+      }
       
-      await update(
-        ref(database, `sessions/${currentSession.id}/participants/${currentParticipant.id}`), 
-        { vote }
-      );
-      
-      set({ 
-        currentParticipant: updatedParticipant,
-        loading: false 
-      });
+      return Promise.resolve();
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to cast vote', 
         loading: false 
       });
+      return Promise.resolve();
     }
   },
   
   revealVotes: async () => {
     const { currentSession } = get();
-    if (!currentSession) return;
+    if (!currentSession) return Promise.resolve();
     
     set({ loading: true, error: null });
     try {
-      await update(ref(database, `sessions/${currentSession.id}`), {
-        isRevealed: true
-      });
+      // Update session to reveal votes
+      const session = mockSessions[currentSession.id];
+      if (session) {
+        session.isRevealed = true;
+        set({ 
+          currentSession: session,
+          loading: false 
+        });
+      }
       
-      set({ loading: false });
+      return Promise.resolve();
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to reveal votes', 
         loading: false 
       });
+      return Promise.resolve();
     }
   },
   
   resetVotes: async () => {
     const { currentSession } = get();
-    if (!currentSession) return;
+    if (!currentSession) return Promise.resolve();
     
     set({ loading: true, error: null });
     try {
-      // Reset isRevealed state
-      await update(ref(database, `sessions/${currentSession.id}`), {
-        isRevealed: false
-      });
+      // Reset votes and isRevealed state
+      const session = mockSessions[currentSession.id];
+      if (session) {
+        session.isRevealed = false;
+        
+        // Reset votes for all participants
+        Object.keys(session.participants).forEach(participantId => {
+          session.participants[participantId].vote = null;
+        });
+        
+        set({ 
+          currentSession: session,
+          loading: false 
+        });
+      }
       
-      // Reset votes for all participants
-      const participants = currentSession.participants;
-      const updates: Record<string, any> = {};
-      
-      Object.keys(participants).forEach(participantId => {
-        updates[`sessions/${currentSession.id}/participants/${participantId}/vote`] = null;
-      });
-      
-      await update(ref(database), updates);
-      
-      set({ loading: false });
+      return Promise.resolve();
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to reset votes', 
         loading: false 
       });
+      return Promise.resolve();
     }
   },
 }));

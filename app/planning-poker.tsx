@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { LanguageSelector } from '@src/components/LanguageSelector';
-import { Button } from '@src/components/Button';
-import { PlanningCard } from '@src/components/PlanningCard';
+import { LanguageSelector } from '@/components/LanguageSelector';
+import { Button } from '@/components/Button';
+import { PlanningCard } from '@/components/PlanningCard';
 
 // Standard Fibonacci sequence used in Planning Poker
 const CARD_VALUES = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '∞'];

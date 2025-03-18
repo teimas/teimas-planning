@@ -24,10 +24,13 @@ export default function HomeScreen() {
       const sessionId = await useSessionStore.getState().createSession(name || 'Anonymous');
       console.log('Session created successfully, navigating to session with ID:', sessionId);
       
-      router.push({
-        pathname: 'planning-session' as any,
-        params: { id: sessionId },
-      });
+      // Short timeout to simulate network delay
+      setTimeout(() => {
+        router.push({
+          pathname: 'planning-session' as any,
+          params: { id: sessionId },
+        });
+      }, 300);
     } catch (error) {
       console.error('Error creating session:', error);
       Alert.alert(
@@ -49,10 +52,14 @@ export default function HomeScreen() {
     try {
       const formattedSessionId = sessionId.trim().toUpperCase();
       await joinSession(formattedSessionId, name || 'Anonymous');
-      router.push({
-        pathname: 'planning-session' as any,
-        params: { id: formattedSessionId },
-      });
+      
+      // Short timeout to simulate network delay
+      setTimeout(() => {
+        router.push({
+          pathname: 'planning-session' as any,
+          params: { id: formattedSessionId },
+        });
+      }, 300);
     } catch (error) {
       Alert.alert(
         t('common.error'),

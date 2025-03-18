@@ -9,8 +9,6 @@ import { Button } from '@/components/Button';
 import { PlanningCard } from '@/components/PlanningCard';
 import useSessionStore, { Participant } from '@/stores/sessionStore';
 import * as Clipboard from 'expo-clipboard';
-import { database } from '@/firebase/config';
-import { ref, set } from 'firebase/database';
 
 // Standard Fibonacci sequence used in Planning Poker
 const CARD_VALUES = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '∞'];
@@ -39,19 +37,18 @@ export default function PlanningSessionScreen() {
     if (id && !currentSession) {
       console.log('Attempting to load session:', id);
       try {
-        // If there's no session but we have an ID, check if it exists in Firebase
-        // This is useful when users navigate directly to the URL
+        // If there's no session but we have an ID, check if it exists
         useSessionStore.getState().joinSession(id, 'Guest')
           .then(() => {
             console.log('Successfully joined session:', id);
           })
           .catch(error => {
             console.error('Failed to join session:', error);
-            Alert.alert('Error', `Failed to join session: ${error.message || 'Unknown error'}`);
+            Alert.alert('Error', `Failed to join session: ${error instanceof Error ? error.message : String(error)}`);
           });
       } catch (error) {
         console.error('Error in joinSession effect:', error);
-        Alert.alert('Error', `Error in join session: ${error.message || 'Unknown error'}`);
+        Alert.alert('Error', `Error in join session: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }, [id, currentSession]);
@@ -188,39 +185,14 @@ export default function PlanningSessionScreen() {
     const sessionState = useSessionStore.getState();
     console.log('No session or participant data available. ID:', id, 'Error:', sessionState.error);
     
-    const testFirebase = async () => {
-      try {
-        await set(ref(database, `test_${Date.now()}`), {
-          timestamp: Date.now(),
-          message: 'Testing connection from planning screen'
-        });
-        
-        Alert.alert('Success', 'Firebase database test write successful!');
-      } catch (error) {
-        console.error('Firebase test failed:', error);
-        if (error instanceof Error) {
-          Alert.alert('Error', `Firebase test failed: ${error.message}`);
-        } else {
-          Alert.alert('Error', `Firebase test failed: ${String(error)}`);
-        }
-      }
-    };
-    
     return (
       <ThemedView style={styles.container}>
-        <ThemedText>{t('common.loading')}</ThemedText>
+        <ThemedText style={styles.loadingText}>{t('common.loading')}</ThemedText>
         <ThemedText style={styles.errorText}>
           {sessionState.error ? `Error: ${sessionState.error}` : 'Attempting to connect to session...'}
         </ThemedText>
         
         <View style={styles.buttonContainer}>
-          <Button
-            title="Test Firebase"
-            onPress={testFirebase}
-            variant="primary"
-            style={styles.actionButton}
-          />
-          
           <Button
             title="Go Back"
             onPress={() => router.replace('home' as any)}
@@ -416,12 +388,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
   },
+  loadingText: {
+    marginTop: 20,
+    textAlign: 'center',
+  },
   buttonContainer: {
     marginTop: 30,
     width: '100%',
-  },
-  backButton: {
-    marginTop: 20,
-    width: 200,
   },
 }); 

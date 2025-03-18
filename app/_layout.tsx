@@ -1,39 +1,35 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import React from 'react';
+import { Stack, Slot } from 'expo-router';
+import { LanguageProvider } from '@src/contexts/LanguageContext';
+import '@src/i18n'; // Import i18n configuration
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+// Define the route types
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList {
+      index: undefined;
+      login: undefined;
+      home: undefined;
+      'planning-poker': { sessionId?: string };
+      'planning-session': { id: string };
     }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
   }
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
 }
+
+// This configures the navigation
+export default function RootLayout() {
+  return (
+    <LanguageProvider>
+      <Stack>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="home" />
+        <Stack.Screen name="planning-poker" />
+        <Stack.Screen 
+          name="planning-session" 
+          options={{ gestureEnabled: false }}
+        />
+      </Stack>
+    </LanguageProvider>
+  );
+} 

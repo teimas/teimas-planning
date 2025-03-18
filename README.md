@@ -1,6 +1,9 @@
-# Welcome to your Expo app 👋
+# Planning Teimas
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A multiplatform planning application created with Expo.
+
+**Created by:** Ludo Bermejo (ludo.bermejo@teimas.com)  
+**Company:** [Teimas](https://teimas.com)
 
 ## Get started
 

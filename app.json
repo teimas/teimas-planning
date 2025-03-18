@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "planning-teimas",
+    "name": "Planning Teimas",
     "slug": "planning-teimas",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,6 +8,13 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "teimas",
+    "privacy": "unlisted",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "supportsTablet": true
     },

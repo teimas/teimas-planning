@@ -42,7 +42,7 @@ export type Session = {
 
 // Helper function to get image based on participant initials
 const getParticipantImage = (name: string): string | null => {
-  if (!name) return null;
+  if (!name) {return null;}
   
   // Extract initials from name
   const nameParts = name.split(' ');
@@ -273,7 +273,7 @@ const useSessionStore = create<SessionState>((set, get) => {
     
     leaveSession: async () => {
       const { currentSession, currentParticipant } = get();
-      if (!currentSession || !currentParticipant) return Promise.resolve();
+      if (!currentSession || !currentParticipant) {return Promise.resolve();}
       
       set({ loading: true, error: null });
       try {
@@ -314,7 +314,7 @@ const useSessionStore = create<SessionState>((set, get) => {
     
     castVote: async (vote: string) => {
       const { currentSession, currentParticipant } = get();
-      if (!currentSession || !currentParticipant) return Promise.resolve();
+      if (!currentSession || !currentParticipant) {return Promise.resolve();}
       
       set({ loading: true, error: null });
       try {
@@ -344,7 +344,7 @@ const useSessionStore = create<SessionState>((set, get) => {
     
     revealVotes: async () => {
       const { currentSession } = get();
-      if (!currentSession) return Promise.resolve();
+      if (!currentSession) {return Promise.resolve();}
       
       set({ loading: true, error: null });
       try {
@@ -368,7 +368,7 @@ const useSessionStore = create<SessionState>((set, get) => {
     
     resetVotes: async () => {
       const { currentSession } = get();
-      if (!currentSession) return Promise.resolve();
+      if (!currentSession) {return Promise.resolve();}
       
       set({ loading: true, error: null });
       try {

@@ -90,7 +90,7 @@ export default function PlanningSessionScreen() {
   }, []);
   
   const handleCardSelect = async (value: string) => {
-    if (currentSession?.isRevealed) return;
+    if (currentSession?.isRevealed) {return;}
     
     setSelectedCard(value === selectedCard ? null : value);
     if (value !== selectedCard) {
@@ -104,17 +104,17 @@ export default function PlanningSessionScreen() {
   };
   
   const handleReveal = async () => {
-    if (!currentSession || !isHost) return;
+    if (!currentSession || !isHost) {return;}
     await revealVotes();
   };
   
   const handleReset = async () => {
-    if (!currentSession || !isHost) return;
+    if (!currentSession || !isHost) {return;}
     await resetVotes();
   };
   
   const handleShare = async () => {
-    if (!id) return;
+    if (!id) {return;}
     
     try {
       await Share.share({
@@ -126,7 +126,7 @@ export default function PlanningSessionScreen() {
   };
   
   const copyToClipboard = async () => {
-    if (!id) return;
+    if (!id) {return;}
     
     await Clipboard.setStringAsync(id);
     Alert.alert(t('session.copied'));
@@ -134,13 +134,13 @@ export default function PlanningSessionScreen() {
   
   // Calculate average and most frequent vote
   const calculateResults = () => {
-    if (!currentSession || !currentSession.isRevealed) return null;
+    if (!currentSession || !currentSession.isRevealed) {return null;}
     
     const votes = Object.values(currentSession.participants)
       .map(p => p.vote)
       .filter(v => v && !isNaN(Number(v))) as string[];
     
-    if (votes.length === 0) return null;
+    if (votes.length === 0) {return null;}
     
     // Convert to numbers and calculate average
     const numericVotes = votes.map(v => Number(v));
@@ -176,8 +176,8 @@ export default function PlanningSessionScreen() {
         return aNum - bNum;
       }
       
-      if (isNaN(aNum)) return 1;
-      if (isNaN(bNum)) return -1;
+      if (isNaN(aNum)) {return 1;}
+      if (isNaN(bNum)) {return -1;}
       
       return 0;
     });
@@ -192,7 +192,7 @@ export default function PlanningSessionScreen() {
   
   // Group participants by their vote choice
   const getParticipantsByVote = () => {
-    if (!currentSession || !currentSession.isRevealed) return null;
+    if (!currentSession || !currentSession.isRevealed) {return null;}
     
     const groupedParticipants: Record<string, Participant[]> = {};
     
@@ -209,8 +209,8 @@ export default function PlanningSessionScreen() {
     // Sort groups by vote value (numeric if possible)
     const sortedGroups = Object.entries(groupedParticipants).sort((a, b) => {
       // Special handling for non-numeric votes
-      if (a[0] === '?' || a[0] === '∞') return 1;
-      if (b[0] === '?' || b[0] === '∞') return -1;
+      if (a[0] === '?' || a[0] === '∞') {return 1;}
+      if (b[0] === '?' || b[0] === '∞') {return -1;}
       return Number(a[0]) - Number(b[0]);
     });
     
@@ -219,7 +219,7 @@ export default function PlanningSessionScreen() {
   
   // Get participants who have voted but not revealed
   const getVotedParticipants = () => {
-    if (!currentSession || currentSession.isRevealed) return [];
+    if (!currentSession || currentSession.isRevealed) {return [];}
     
     return Object.values(currentSession.participants)
       .filter(p => p.vote !== null && p.vote !== undefined);
@@ -271,7 +271,7 @@ export default function PlanningSessionScreen() {
   
   // Handle dynamic image imports
   const getParticipantImage = (imagePath: string | null) => {
-    if (!imagePath) return DEFAULT_AVATAR;
+    if (!imagePath) {return DEFAULT_AVATAR;}
     
     // Since imagePath is now just the initials, use it directly to look up the image
     const initials = imagePath;

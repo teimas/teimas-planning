@@ -16,7 +16,7 @@ export default function HomeScreen() {
   
   const name = useUserStore(state => state.name);
   
-  const { createSession, joinSession, loading, error } = useSessionStore();
+  const { joinSession, createSession, loading, error } = useSessionStore();
   
   const handleCreateSession = async () => {
     try {

@@ -1,0 +1,78 @@
+name: Deploy to AWS Amplify
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  CI: true
+  TZ: UTC
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: MAIN
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Add build:web script to package.json
+        run: |
+          # Add build:web script to package.json if it doesn't exist
+          if ! grep -q '"build:web"' package.json; then
+            npm pkg set scripts.build:web="expo export:web"
+            echo "Added build:web script to package.json"
+          fi
+      
+      - name: Build web app
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+        run: npm run build:web
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      - name: Install AWS Amplify CLI
+        run: npm install -g @aws-amplify/cli
+      
+      - name: Deploy to AWS Amplify
+        env:
+          AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
+          AMPLIFY_BRANCH: ${{ secrets.AMPLIFY_BRANCH || 'main' }}
+        run: |
+          # Create zip file of the build
+          cd web-build
+          zip -r ../build.zip .
+          cd ..
+          
+          # Deploy to Amplify Hosting using the AWS CLI
+          echo "Starting deployment to Amplify Hosting..."
+          aws amplify start-deployment \
+            --app-id $AMPLIFY_APP_ID \
+            --branch-name $AMPLIFY_BRANCH \
+            --source-url file://build.zip
+          
+          # Get deployment status and app URL
+          echo "Deployment started. Check the AWS Amplify Console for deployment status."
+          echo "App URL: https://$AMPLIFY_BRANCH.$AMPLIFY_APP_ID.amplifyapp.com" 

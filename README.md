@@ -83,6 +83,51 @@ This project uses environment variables for configuration settings, including Fi
 npm run setup-env
 ```
 
+## Deployment
+
+### Web Version (AWS Amplify Hosting)
+
+This project uses AWS Amplify Hosting for deploying the web version. Deployment is automated via GitHub Actions.
+
+#### Setting up AWS Amplify Hosting (First-time setup)
+
+1. **Create an Amplify app in the AWS Console**:
+   - Go to AWS Amplify Console
+   - Click "New app" > "Host web app"
+   - Choose GitHub as the repository source
+   - Connect your GitHub account and select the repository
+   - Configure the branch to deploy (e.g., main)
+   - Skip the build settings (we'll use GitHub Actions instead)
+
+2. **Configure required GitHub secrets**:
+   - In your GitHub repository, go to Settings > Secrets and variables > Actions
+   - Add the following secrets in the MAIN environment:
+     ```
+     AWS_ACCESS_KEY_ID         # AWS access key with Amplify permissions
+     AWS_SECRET_ACCESS_KEY     # AWS secret key
+     AWS_REGION                # AWS region where your Amplify app is hosted
+     AMPLIFY_APP_ID            # Your Amplify app ID (found in Amplify Console)
+     AMPLIFY_BRANCH            # Branch to deploy (usually 'main')
+     ```
+   - Also ensure all Firebase configuration secrets are added
+
+3. **Update environment variables in Amplify Console**:
+   - In the Amplify Console, go to your app > Environment variables
+   - Add the same Firebase environment variables used in GitHub Actions
+
+#### Automatic Deployments
+
+With the setup complete, the web app will automatically deploy to Amplify Hosting whenever:
+- Code is pushed to the main branch
+- The workflow is manually triggered from GitHub Actions
+
+#### Manual Deployment
+
+You can manually trigger a deployment:
+1. Go to your GitHub repository
+2. Navigate to Actions > "Deploy to AWS Amplify" workflow
+3. Click "Run workflow"
+
 ## License
 
 Private © Teimas

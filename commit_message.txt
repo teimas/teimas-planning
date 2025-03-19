@@ -26,4 +26,30 @@ This commit adds a full test suite for the Planning Poker application, focusing 
 - Achieved 100% coverage for most component files
 - Added snapshot tests for visual components
 
-All tests now pass successfully with good coverage metrics for the core functionality. 
+All tests now pass successfully with good coverage metrics for the core functionality.
+
+feat(config): Add secure Firebase configuration and CI/CD setup
+
+This commit implements secure handling of Firebase configuration and adds CI/CD setup:
+
+- Security improvements:
+  - Replaced hardcoded Firebase credentials with environment variables
+  - Created .env.example template for environment variables
+  - Updated .gitignore to exclude sensitive files
+  - Added setup script for local environment configuration
+
+- CI/CD setup:
+  - Added GitHub Actions workflow for running tests and validation
+  - Created CI-specific Jest setup for testing in GitHub Actions
+  - Added coverage reporting and artifact upload to CI workflow
+  - Configured Firebase validation in CI environment
+
+- Testing improvements:
+  - Updated package.json scripts for better CI compatibility
+  - Split test commands into 'test' and 'test:watch'
+  - Added CI-specific mocks for testing without environment variables
+
+- Documentation:
+  - Updated README with environment setup instructions
+  - Added documentation for GitHub Actions workflow setup
+  - Added instructions for setting up GitHub Secrets 

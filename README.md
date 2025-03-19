@@ -1,137 +1,88 @@
-# Planning Poker
+# Planning Teimas
 
-A multi-user Planning Poker web application for agile teams to estimate work collaboratively. Built with React Native and Expo.
+Multiplatform planning application by Teimas.
 
-**Created by:** Ludo Bermejo  
-**Company:** [Teimas](https://teimas.com)
+## Environment Setup
 
-## What is Planning Poker?
+This project uses environment variables for configuration settings, including Firebase credentials.
 
-Planning Poker is an agile estimation technique where team members use numbered cards to vote on the effort required for a user story or task. This app provides a digital version of this technique, allowing teams to:
+### Setting up environment variables
 
-1. Create estimation sessions
-2. Invite team members to join
-3. Vote anonymously on stories
-4. Reveal all votes simultaneously
-5. Discuss differences and reach consensus
-
-## Features
-
-- **Multi-user real-time sessions**: Create and join planning poker sessions
-- **Anonymous voting**: Cast votes privately until all votes are revealed
-- **Vote visualization**: See votes displayed by card value after reveal
-- **Statistical analysis**: View average and most common estimates
-- **User-friendly interface**: Simple, intuitive design for all team members
-- **Session sharing**: Easily share session IDs to invite others
-- **Host controls**: Session creator can reveal votes and reset for new rounds
-- **Responsive design**: Works on desktop, tablet, and mobile browsers
-- **Multilingual support**: Available in English and Spanish
-
-## Technology Stack
-
-- **Frontend**: React Native Web, Expo
-- **State Management**: Zustand
-- **Backend**: Firebase Realtime Database
-- **Authentication**: Username-only for simplicity
-- **Routing**: Expo Router
-- **Internationalization**: i18next
-
-## Getting Started
-
-1. Install dependencies
-
+1. Run the setup script:
    ```bash
-   npm install
+   npm run setup-env
    ```
 
-2. Configure Firebase
+2. This will create a `.env` file based on `.env.example`.
 
-   Update the Firebase configuration in `firebase/config.ts` with your own Firebase project details.
+3. Update the `.env` file with your actual Firebase configuration values.
 
-3. Start the app
+## Firebase Configuration
 
-   ```bash
-   npx expo start --web
-   ```
-
-## Usage Instructions
-
-1. **Login**: Enter your name to identify yourself in the session
-2. **Home Screen**: Choose to create a new session or join an existing one
-3. **Create Session**: Start a new planning session as the host
-4. **Join Session**: Enter a session ID to join as a participant
-5. **Vote**: Select a card with your estimate
-6. **Reveal**: The host can reveal all votes at once
-7. **Analysis**: View the average and most frequent estimates
-8. **Reset**: Start a new round with the same participants
+Firebase configuration has been moved to environment variables for improved security. The configuration is stored in:
+- Firebase configuration files:
+  - `firebase/config.ts`
+  - `src/firebase/config.ts`
 
 ## Development
 
-This project uses Expo and React Native. The main files are:
-
-- `app/login.tsx`: Login screen
-- `app/home.tsx`: Home screen for creating/joining sessions
-- `app/planning-session.tsx`: Main Planning Poker screen
-- `stores/sessionStore.ts`: State management for sessions
-- `firebase/config.ts`: Firebase configuration
-
-## Customization
-
-- **Card Values**: Modify `CARD_VALUES` in `app/planning-session.tsx` to use different scales
-- **Appearance**: Edit the styles in each component file
-- **Language**: Update translations in `src/i18n/en.json` and `src/i18n/es.json`
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Get started
-
-1. Install dependencies
-
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. Start the development server:
    ```bash
-    npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+3. Run on specific platforms:
+   ```bash
+   npm run android
+   npm run ios
+   npm run web
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Testing
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+Run tests:
 ```bash
-npm run reset-project
+npm test
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Run tests in watch mode:
+```bash
+npm run test:watch
+```
 
-## Learn more
+## CI/CD
 
-To learn more about developing your project with Expo, look at the following resources:
+This project includes a GitHub Actions workflow in `.github/workflows/ci.yml` that:
+1. Runs linting
+2. Runs tests with coverage
+3. Validates Firebase configuration
+4. Uploads coverage reports as artifacts
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Setting up GitHub Secrets
 
-## Join the community
+For the GitHub Actions workflow to work correctly, you need to add the following secrets in your GitHub repository:
 
-Join our community of developers creating universal apps.
+- `FIREBASE_API_KEY`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_DATABASE_URL`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_STORAGE_BUCKET`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_APP_ID`
+- `FIREBASE_MEASUREMENT_ID`
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+To add these secrets:
+1. Go to your GitHub repository
+2. Click on "Settings"
+3. In the sidebar, click on "Secrets and variables" > "Actions"
+4. Click on "New repository secret"
+5. Add each secret with its corresponding value
+
+## License
+
+Private © Teimas

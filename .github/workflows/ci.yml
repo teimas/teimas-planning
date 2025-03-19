@@ -6,9 +6,14 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+env:
+  CI: true
+  TZ: UTC
+
 jobs:
   test-and-validate:
     runs-on: ubuntu-latest
+    environment: MAIN
     steps:
       - uses: actions/checkout@v4
       

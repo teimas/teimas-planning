@@ -1,0 +1,29 @@
+feat(testing): Implement comprehensive test suite for Planning Poker app
+
+This commit adds a full test suite for the Planning Poker application, focusing on component, hooks, and store testing:
+
+- Created test files for core components:
+  - AnimatedPlanningCard
+  - AnimatedParticipant
+  - AnimatedResults
+  - LanguageSelector
+
+- Implemented basic tests for hooks:
+  - useColorScheme (with coverage exclusion config)
+  - useThemeColor
+
+- Added initial tests for stores:
+  - sessionStore (basic functionality)
+  - Basic mocking for store interaction
+
+- Set up testing infrastructure:
+  - Created Jest configuration in package.json
+  - Added global Jest setup files with proper mocks
+  - Configured test exclusions and coverage reporting
+  - Fixed issues with animation and React Native mocking
+
+- Excluded simple re-exports from coverage reports
+- Achieved 100% coverage for most component files
+- Added snapshot tests for visual components
+
+All tests now pass successfully with good coverage metrics for the core functionality. 

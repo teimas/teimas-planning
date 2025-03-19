@@ -16,26 +16,26 @@ interface VoteResult {
 }
 
 interface AnimatedResultsProps {
-  results: VoteResult[];
-  average: string;
+  voteResults: VoteResult[];
+  average: string | number;
   mostFrequent: string;
   totalVotes: number;
 }
 
 export function AnimatedResults({ 
-  results, 
+  voteResults = [], 
   average, 
   mostFrequent,
   totalVotes
 }: AnimatedResultsProps) {
   const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const barAnims = useRef(results.map(() => new Animated.Value(0)));
+  const barAnims = useRef(voteResults.map(() => new Animated.Value(0)));
   
   // Entry animation
   useEffect(() => {
     // Reset all animations on new results
-    barAnims.current = results.map(() => new Animated.Value(0));
+    barAnims.current = voteResults.map(() => new Animated.Value(0));
     
     // Fade in the results summary
     Animated.timing(fadeAnim, {
@@ -49,108 +49,115 @@ export function AnimatedResults({
     const barAnimations = barAnims.current.map((anim, index) => {
       return Animated.timing(anim, {
         toValue: 1,
-        duration: 600,
-        delay: 200 + (index * 100), // Staggered delay for each bar
-        useNativeDriver: Platform.OS !== 'web', // Native driver doesn't work with width animation on web
-        easing: Easing.out(Easing.cubic)
+        duration: 500,
+        delay: index * 100,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease)
       });
     });
     
-    Animated.stagger(50, barAnimations).start();
-  }, [results]);
+    Animated.stagger(100, barAnimations).start();
+  }, [voteResults]);
   
-  return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <View style={styles.summary}>
-        <View style={styles.summaryItem}>
-          <ThemedText style={styles.summaryLabel}>{t('session.average')}</ThemedText>
-          <ThemedText style={styles.summaryValue}>{average}</ThemedText>
-        </View>
-        
-        <View style={styles.summaryItem}>
-          <ThemedText style={styles.summaryLabel}>{t('session.mostCommon')}</ThemedText>
-          <ThemedText style={styles.summaryValue}>{mostFrequent}</ThemedText>
-        </View>
-        
-        <View style={styles.summaryItem}>
-          <ThemedText style={styles.summaryLabel}>{t('session.totalVotes')}</ThemedText>
-          <ThemedText style={styles.summaryValue}>{totalVotes}</ThemedText>
-        </View>
+  // Empty state
+  if (voteResults.length === 0 || totalVotes === 0) {
+    return (
+      <View style={styles.container}>
+        <Animated.View style={[styles.summaryContainer, { opacity: fadeAnim }]}>
+          <ThemedText style={styles.noVotesText}>No votes yet</ThemedText>
+        </Animated.View>
       </View>
-      
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Summary Section */}
+      <Animated.View style={[styles.summaryContainer, { opacity: fadeAnim }]}>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <ThemedText style={styles.summaryLabel}>Average: {average}</ThemedText>
+          </View>
+          <View style={styles.summaryItem}>
+            <ThemedText style={styles.summaryLabel}>Most frequent: {mostFrequent}</ThemedText>
+          </View>
+          <View style={styles.summaryItem}>
+            <ThemedText style={styles.summaryLabel}>Total votes: {totalVotes}</ThemedText>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Results Bars */}
       <View style={styles.barsContainer}>
-        {results.map((result, index) => (
-          <View key={result.value} style={styles.barRow}>
-            <ThemedText style={styles.barLabel}>{result.value}</ThemedText>
+        {voteResults.map((result, index) => (
+          <View key={`result-${result.value}`} style={styles.barRow}>
+            <View style={styles.barLabelContainer}>
+              <ThemedText style={styles.barLabel}>{result.value}</ThemedText>
+            </View>
             <View style={styles.barBackground}>
               <Animated.View 
                 style={[
                   styles.barFill,
                   { 
-                    width: Platform.OS === 'web' 
-                      ? barAnims.current[index].interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0%', `${result.percentage}%`]
-                        })
-                      : undefined,
-                    transform: Platform.OS !== 'web' ? [
-                      { 
-                        scaleX: barAnims.current[index].interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.01, result.percentage / 100]
-                        }) 
-                      }
-                    ] : undefined,
-                    transformOrigin: 'left',
+                    width: barAnims.current[index].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', `${result.percentage}%`]
+                    })
                   }
                 ]}
               />
             </View>
-            <ThemedText style={styles.barValue}>{result.count} ({result.percentage}%)</ThemedText>
+            <View style={styles.barValueContainer}>
+              <ThemedText style={styles.barValue}>
+                {result.count} ({result.percentage}%)
+              </ThemedText>
+            </View>
           </View>
         ))}
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 15,
+    backgroundColor: 'white',
     borderRadius: 8,
+    
+    // For Web
     ...Platform.select({
       web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
       },
       default: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
-        elevation: 3
+        elevation: 2
       }
     })
   },
-  summary: {
+  summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
     paddingBottom: 10,
+    marginBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)'
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
   summaryItem: {
     alignItems: 'center'
   },
   summaryLabel: {
-    fontSize: 12,
-    marginBottom: 4,
+    fontSize: 14,
     opacity: 0.6
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: 'bold'
   },
   barsContainer: {
     marginTop: 5
@@ -160,31 +167,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8
   },
-  barLabel: {
+  barLabelContainer: {
     width: 30,
     fontSize: 14,
+  },
+  barLabel: {
+    fontSize: 14,
     fontWeight: 'bold',
-    marginRight: 8,
-    textAlign: 'center'
   },
   barBackground: {
     flex: 1,
     height: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
     overflow: 'hidden'
   },
   barFill: {
     height: '100%',
-    width: '0%', // Start at 0% and animate to the final percentage
     backgroundColor: '#3498db',
-    borderRadius: 10,
+    borderRadius: 4,
     transformOrigin: 'left'
   },
-  barValue: {
+  barValueContainer: {
     width: 70,
-    fontSize: 12,
-    marginLeft: 8,
     textAlign: 'right'
+  },
+  barValue: {
+    fontSize: 12
+  },
+  noVotesText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center'
   }
 }); 

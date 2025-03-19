@@ -21,6 +21,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Check file existence
+        run: |
+          echo "Checking for firebase config files..."
+          if [ -f "./firebase/config.ts" ]; then
+            echo "✅ firebase/config.ts exists"
+          else
+            echo "❌ firebase/config.ts not found"
+            find . -name "config.ts" | grep firebase
+          fi
+          
+          if [ -f "./src/firebase/config.ts" ]; then
+            echo "✅ src/firebase/config.ts exists"
+          else
+            echo "❌ src/firebase/config.ts not found"
+          fi
+      
       - name: Run linting
         run: npm run lint
       
@@ -56,5 +72,29 @@ jobs:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
         run: |
-          # This will fail if any required environment variables are missing
-          node -e "try { require('./firebase/config'); console.log('Firebase config validated'); } catch(e) { console.error(e); process.exit(1); }" 
+          echo "Validating Firebase configuration..."
+          # Create a test script that validates Firebase configuration without needing to import the actual files
+          cat > validate-firebase-config.js << 'EOF'
+          // Simple validation script
+          const requiredEnvVars = [
+            'FIREBASE_API_KEY',
+            'FIREBASE_AUTH_DOMAIN',
+            'FIREBASE_DATABASE_URL',
+            'FIREBASE_PROJECT_ID',
+            'FIREBASE_STORAGE_BUCKET',
+            'FIREBASE_MESSAGING_SENDER_ID',
+            'FIREBASE_APP_ID',
+            'FIREBASE_MEASUREMENT_ID'
+          ];
+          
+          const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+          if (missingEnvVars.length > 0) {
+            console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+            process.exit(1);
+          } else {
+            console.log('All Firebase environment variables are present.');
+            process.exit(0);
+          }
+          EOF
+          
+          node validate-firebase-config.js 

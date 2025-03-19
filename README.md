@@ -1,28 +1,34 @@
 # Planning Teimas
 
-Multiplatform planning application by Teimas.
+A modern, multiplatform Planning Poker application by Teimas.
 
-## Environment Setup
+## What is Planning Poker?
 
-This project uses environment variables for configuration settings, including Firebase credentials.
+Planning Poker (also known as Scrum Poker) is a consensus-based estimation technique used in agile software development. It helps teams estimate the relative effort of user stories or tasks in a collaborative way by:
 
-### Setting up environment variables
+- Encouraging equal participation from all team members
+- Reducing cognitive bias by revealing estimates simultaneously
+- Creating meaningful discussions about complexity and requirements
+- Leveraging the wisdom of the group to arrive at more accurate estimates
 
-1. Run the setup script:
-   ```bash
-   npm run setup-env
-   ```
+Planning Poker is important because it:
+- Improves accuracy of project timelines
+- Enhances team collaboration and communication
+- Identifies misunderstandings about requirements early
+- Creates shared ownership of estimates among team members
+- Makes estimation more engaging through gamification
 
-2. This will create a `.env` file based on `.env.example`.
+## Technologies Used
 
-3. Update the `.env` file with your actual Firebase configuration values.
+This application is built using a modern tech stack:
 
-## Firebase Configuration
-
-Firebase configuration has been moved to environment variables for improved security. The configuration is stored in:
-- Firebase configuration files:
-  - `firebase/config.ts`
-  - `src/firebase/config.ts`
+- **React Native & Expo**: Cross-platform mobile framework allowing us to deploy to iOS, Android and Web
+- **TypeScript**: For type-safe code and improved developer experience
+- **Firebase**: Backend services including authentication, real-time database, and analytics
+- **i18next**: Internationalization framework for multi-language support
+- **Jest**: Testing framework with comprehensive coverage reporting
+- **ESLint**: Code quality and style enforcement
+- **GitHub Actions**: CI/CD pipeline for automated testing and deployment
 
 ## Development
 
@@ -55,33 +61,27 @@ Run tests in watch mode:
 npm run test:watch
 ```
 
-## CI/CD
+## CI/CD with GitHub Actions
 
-This project includes a GitHub Actions workflow in `.github/workflows/ci.yml` that:
-1. Runs linting
-2. Runs tests with coverage
-3. Validates Firebase configuration
-4. Uploads coverage reports as artifacts
+This project uses GitHub Actions for continuous integration and deployment. GitHub Actions is a CI/CD platform that allows you to automate your build, test, and deployment pipeline directly from GitHub.
 
-### Setting up GitHub Secrets
+Our workflow in `.github/workflows/ci.yml` automatically:
 
-For the GitHub Actions workflow to work correctly, you need to add the following secrets in your GitHub repository:
+1. **Sets up the environment**: Configures Node.js and installs dependencies
+2. **Runs linting**: Ensures code quality and consistency  
+3. **Executes tests**: Runs the test suite with coverage reporting
+4. **Validates configurations**: Checks that all necessary configurations are present
+5. **Uploads artifacts**: Stores test coverage reports for later analysis
 
-- `FIREBASE_API_KEY`
-- `FIREBASE_AUTH_DOMAIN`
-- `FIREBASE_DATABASE_URL`
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_STORAGE_BUCKET`
-- `FIREBASE_MESSAGING_SENDER_ID`
-- `FIREBASE_APP_ID`
-- `FIREBASE_MEASUREMENT_ID`
+The CI pipeline runs automatically on pushes to main/develop branches and on pull requests, helping maintain code quality and preventing integration issues.
 
-To add these secrets:
-1. Go to your GitHub repository
-2. Click on "Settings"
-3. In the sidebar, click on "Secrets and variables" > "Actions"
-4. Click on "New repository secret"
-5. Add each secret with its corresponding value
+## Environment Setup
+
+This project uses environment variables for configuration settings, including Firebase credentials. Run the setup script to create your local environment:
+
+```bash
+npm run setup-env
+```
 
 ## License
 
